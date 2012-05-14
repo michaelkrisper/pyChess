@@ -143,10 +143,13 @@ class Game(object):
     def printBoard(self):
         rows = []
         
-        rows.append("    A  B  C  D  E  F  G  H ")  
+        rows.append("     A  B  C  D  E  F  G  H ")
+        rows.append("   ┌────────────────────────┐")  
         for i, row in enumerate(self.board, start=1):
-            rows.append(" " + str(i) + " " + "".join(map(str, row)))
+            rows.append(" " + str(i) + " │" + "".join(map(str, row)) + "│")
+        rows.append("   └────────────────────────┘")
         print "\n".join(rows)
+          
         print ""
         
     def move(self, fromPosition, toPosition):
