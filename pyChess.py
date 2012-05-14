@@ -1,9 +1,9 @@
 #! /usr/local/bin python
 # -*- coding: UTF-8 -*-
+
 __author__ = "Michael Krisper
 __date__ = "2012-05-14"
 __python__ = "2.7.3"
-
 
 def singleton(cls):
     return cls()
