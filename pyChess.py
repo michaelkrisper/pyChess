@@ -1,9 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 useSymbols = True
-#useSymbols = False
-
-
+useSymbols = False
 if useSymbols:
     QUEEN = "♛"
     KING = "♚"
@@ -18,8 +16,6 @@ else:
     KNIGHT = "S"
     PAWN = "B"
     ROOK = "T"
-    
-
 
 class Piece(object):
     def __init__(self, name, isBlack):
