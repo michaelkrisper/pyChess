@@ -29,6 +29,7 @@ class ChessSymbols(object):
             self.ROOK = "T"
         
 class Piece(object):
+"""Base Class for all Pieces"""
     def __init__(self, name, isBlack):
         self.name = name
         self.isBlack = isBlack
