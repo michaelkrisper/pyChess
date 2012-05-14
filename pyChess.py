@@ -1,22 +1,26 @@
 # -*- coding: UTF-8 -*-
 
-useSymbols = True
-useSymbols = False
-if useSymbols:
-    QUEEN = "♛"
-    KING = "♚"
-    BISHOP = "♝"
-    KNIGHT = "♞"
-    PAWN = "♟"
-    ROOK = "♜"
-else:
-    QUEEN = "D"
-    KING = "K"
-    BISHOP = "L"
-    KNIGHT = "S"
-    PAWN = "B"
-    ROOK = "T"
+def singleton(cls):
+    return cls()
 
+@singleton
+class ChessSymbols(object):
+    def __init__(self):
+        if True:
+            self.QUEEN = "♛"
+            self.KING = "♚"
+            self.BISHOP = "♝"
+            self.KNIGHT = "♞"
+            self.PAWN = "♟"
+            self.ROOK = "♜"
+        else:
+            self.QUEEN = "D"
+            self.KING = "K"
+            self.BISHOP = "L"
+            self.KNIGHT = "S"
+            self.PAWN = "B"
+            self.ROOK = "T"
+        
 class Piece(object):
     def __init__(self, name, isBlack):
         self.name = name
@@ -40,7 +44,7 @@ class Piece(object):
 
 class Bauer(Piece):
     def __init__(self, isBlack):
-        Piece.__init__(self, PAWN, isBlack)
+        Piece.__init__(self, ChessSymbols.PAWN, isBlack)
 
     def isMoveAllowed(self, fromTile, toTile):
         if self.isBlack:
@@ -55,7 +59,7 @@ class Bauer(Piece):
 
 class Laufer(Piece):
     def __init__(self, isBlack):
-        Piece.__init__(self, BISHOP, isBlack)
+        Piece.__init__(self, ChessSymbols.BISHOP, isBlack)
     
     def isMoveAllowed(self, fromTile, toTile):
         for i in range(1, 8):
@@ -126,14 +130,14 @@ class Game(object):
       
         color = True
         for line in [0, -1]:
-            self.board[line][0].piece = Piece(ROOK, color)
-            self.board[line][1].piece = Piece(KNIGHT, color)
+            self.board[line][0].piece = Piece(ChessSymbols.ROOK, color)
+            self.board[line][1].piece = Piece(ChessSymbols.KNIGHT, color)
             self.board[line][2].piece = Laufer(color)
-            self.board[line][3].piece = Piece(KING, color)
-            self.board[line][4].piece = Piece(QUEEN, color)
+            self.board[line][3].piece = Piece(ChessSymbols.KING, color)
+            self.board[line][4].piece = Piece(ChessSymbols.QUEEN, color)
             self.board[line][5].piece = Laufer(color)
-            self.board[line][6].piece = Piece(KNIGHT, color)
-            self.board[line][7].piece = Piece(ROOK, color)
+            self.board[line][6].piece = Piece(ChessSymbols.KNIGHT, color)
+            self.board[line][7].piece = Piece(ChessSymbols.ROOK, color)
             color = False
     
     def printBoard(self):
@@ -146,8 +150,8 @@ class Game(object):
         print ""
         
     def move(self, fromPosition, toPosition):
-        fromTile = self.board[fromPosition[1] - 1][self._col(fromPosition[0])]
-        toTile = self.board[toPosition[1] - 1][self._col(toPosition[0])]
+        fromTile = self.board[int(fromPosition[1]) - 1][self._col(fromPosition[0])]
+        toTile = self.board[int(toPosition[1]) - 1][self._col(toPosition[0])]
         fromTile.movePieceTo(toTile)
         
     def _col(self, letter):
@@ -159,15 +163,15 @@ def main():
     game.printBoard()
 
     print "\x1b[31mplayer A\x1b[0m from B2 to B3:"
-    game.move(("B", 2), ("B", 3))
+    game.move("B2", "B3")
     game.printBoard()
     
     print "\x1b[34mplayer B\x1b[0m from G7 to G6:"
-    game.move(("G", 7), ("G", 6))
+    game.move("G7", "G6")
     game.printBoard()
     
     print "\x1b[31mplayer A\x1b[0m from C1 to A3:"
-    game.move(("C", 1), ("A", 3))
+    game.move("C1", "A3")
     game.printBoard()
 
 if __name__ == '__main__':
