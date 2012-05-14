@@ -11,6 +11,7 @@ def singleton(cls):
 
 @singleton
 class ChessSymbols(object):
+"""Class for defining the chess symbols"""
     def __init__(self):
         if True:
             self.QUEEN = "♛"
