@@ -6,6 +6,7 @@ __date__ = "2012-05-14"
 __python__ = "2.7.3"
 
 def singleton(cls):
+    """Singleton Decorator"""
     return cls()
 
 @singleton
