@@ -44,7 +44,7 @@ class Piece(object):
         if self.isMoveAllowed(fromTile, toTile):
             toTile.piece = self
             fromTile.piece = None
-            return True    
+            return True
         else:
             print "Error: This move not allowed due to chess rules"
             return False
@@ -61,28 +61,19 @@ class King(Piece):
             return True
         else:
             return False
-        
-class Rook(Piece):
-    def __init__(self, player):
-        Piece.__init__(self, ChessSymbols.ROOK, player)
-        
-    def isMoveAllowed(self, fromTile, toTile):
-        for x, y in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
-            for i in range(1, 8):
-                if fromTile.getTile(i * x, i * y) == toTile and fromTile.piece.player != toTile.piece.player:
-                    return True
-                elif fromTile.getTile(i * x, i * y).piece != None:
-                    break
 
-        return False
 
 class Knight(Piece):
     def __init__(self, player):
         Piece.__init__(self, ChessSymbols.KNIGHT, player)
     
     def isMoveAllowed(self, fromTile, toTile):
-        print "Warning: not implemented"
-        return True
+        if (toTile in (fromTile.getTile(x, y) for x, y in ((-1, -2), (1, -2), (2, -1), (2, 1), (1, 2), (-1, 2), (-2, 1), (-2, -1)))
+            and (toTile.piece == None or toTile.piece.player != fromTile.piece.player)):
+            #jump 2 fields and 1 field to the side, strike enemy piece if needed 
+            return True
+        
+        return False
 
 class Pawn(Piece):
     def __init__(self, player):
@@ -97,9 +88,27 @@ class Pawn(Piece):
         
         if (toTile.piece != None and toTile.piece.player != fromTile.piece.player
             and toTile in (fromTile.getTile(-1, d), fromTile.getTile(1, d))):
-            # diagonal forward strike
+            # diagonal forward strike enemy piece
             return True
         
+        return False
+
+class Rook(Piece):
+    def __init__(self, player):
+        Piece.__init__(self, ChessSymbols.ROOK, player)
+        
+    def isMoveAllowed(self, fromTile, toTile):
+        for x, y in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+            for i in range(1, 8):
+                if fromTile.getTile(i * x, i * y) == toTile and (toTile.piece == None or fromTile.piece.player != toTile.piece.player):
+                    # go in diagonal direction, strike enemy piece if needed
+                    return True
+                else:
+                    tile = fromTile.getTile(i * x, i * y)
+                    if tile != None and tile.piece != None:
+                    # if a piece blocks the way: not allowed
+                        break
+                
         return False
 
 class Bishop(Piece):
@@ -109,10 +118,14 @@ class Bishop(Piece):
     def isMoveAllowed(self, fromTile, toTile):
         for x, y in [(1, 1), (-1, 1), (1, -1), (-1, -1)]:
             for i in range(1, 8):
-                if fromTile.getTile(i * x, i * y) == toTile and fromTile.piece.player != toTile.piece.player:
+                if fromTile.getTile(i * x, i * y) == toTile and (toTile.piece == None or fromTile.piece.player != toTile.piece.player):
+                    # go in diagonal direction, strike enemy piece if needed
                     return True
-                elif fromTile.getTile(i * x, i * y).piece != None:
-                    break
+                else:
+                    tile = fromTile.getTile(i * x, i * y)
+                    if tile != None and tile.piece != None:
+                    # if a piece blocks the way: not allowed
+                        break
 
         return False
 
@@ -163,8 +176,13 @@ class CommandMove(Command):
     names = ["move", "mv", "m"]
     
     def execute(self, params):
+        if len(params) != 2:
+            print "Error: Wrong Usage (expected: move FROM TO)"
+            return False
+        
         fromPosition = params[0]
         toPosition = params[1]
+        
         fromTile = self._game.board[int(fromPosition[1]) - 1][ord(fromPosition[0].lower()) - ord("a")]
         toTile = self._game.board[int(toPosition[1]) - 1][ord(toPosition[0].lower()) - ord("a")]
         
@@ -177,6 +195,17 @@ class CommandMove(Command):
             return False
 
         return fromTile.movePieceTo(toTile)
+
+class CommandSetName(Command):
+    names = ["setname"]
+    
+    def execute(self, params):
+        if len(params) != 1:
+            print "Error: Wrong Usage (expected: setname NAME)"
+            return False
+        
+        self._game.currentPlayer().setName(params[0])
+        return False
 
 class CommandFactory:
     def __init__(self, controller):
@@ -221,7 +250,7 @@ class Player(object):
         self.direction = direction
 
     def setName(self, name):
-        self.name = name
+        self._name = name
         
     def __str__(self):
         return self._color + self._name + "\x1b[0m"
@@ -250,22 +279,32 @@ class Game(object):
         for i, row in enumerate(self.board, start=1):
             rows.append(" " + str(i) + " │" + "".join(map(str, row)) + "│")
         rows.append("   └────────────────────────┘")
+        
+        
         print "\n".join(rows)
         print ""
         
     def run(self):
         self._run = True
+        #print '\x1b[H\x1b[2J' # delete whole console screen
         self.printBoard()
         while self._run:
-            splitText = raw_input("chess(%s)> " % self.currentPlayer()).split()
-
-            cmd = self._factory.getCommand(splitText[0])
-            if (cmd):
-                if cmd.execute(splitText[1:]):
-                    self.switchPlayer()
-            else:
-                print "ERROR: Command not recognized."
+            prompt = "(%s)> " % self.currentPlayer()
+            input_text = raw_input(prompt)
+            splitText = input_text.split()
+            #print '\x1b[H\x1b[2J' # delete whole console screen
+            if len(splitText)>0:
+                cmd = self._factory.getCommand(splitText[0])
+                if (cmd):
+                    try:
+                        if cmd.execute(splitText[1:]):
+                            self.switchPlayer()
+                    except Exception:
+                        print "Error: Wrong Params or Wrong Values"
+                else:
+                    print "Error: Command not recognized."
             self.printBoard()
+            #print prompt + input_text # reprint previous command
 
     def switchPlayer(self):
         self._currentPlayer = (self._currentPlayer + 1) % 2
