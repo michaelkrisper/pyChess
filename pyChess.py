@@ -1,8 +1,8 @@
 #! /usr/local/bin python
 # -*- coding: UTF-8 -*-
 
-__author__ = "Michael Krisper
-__date__ = "2012-05-14"
+__author__ = "Michael Krisper"
+__date__ = "2012-05-15"
 __python__ = "2.7.3"
 
 def singleton(cls):
@@ -11,7 +11,7 @@ def singleton(cls):
 
 @singleton
 class ChessSymbols(object):
-"""Class for defining the chess symbols"""
+    """Class for defining the chess symbols"""
     def __init__(self):
         if True:
             self.QUEEN = "♛"
@@ -29,16 +29,13 @@ class ChessSymbols(object):
             self.ROOK = "T"
         
 class Piece(object):
-"""Base Class for all Pieces"""
-    def __init__(self, name, isBlack):
+    """Base Class for all Pieces"""
+    def __init__(self, name, player):
         self.name = name
-        self.isBlack = isBlack
+        self.player = player
 
     def __str__(self):
-        if self.isBlack:
-            return "\x1b[31m%s" % self.name
-        else:
-            return "\x1b[34m%s" % self.name
+        return self.player.getColor() + self.name
     
     def isMoveAllowed(self, fromTile, toTile):
         raise NotImplementedError("Method not implemented: Piece.isMoveAllowed")
@@ -47,53 +44,84 @@ class Piece(object):
         if self.isMoveAllowed(fromTile, toTile):
             toTile.piece = self
             fromTile.piece = None
+            return True    
         else:
-            print "move not allowed"
+            print "Error: This move not allowed due to chess rules"
+            return False
 
-class Bauer(Piece):
-    def __init__(self, isBlack):
-        Piece.__init__(self, ChessSymbols.PAWN, isBlack)
+class King(Piece):
+    def __init__(self, player):
+        Piece.__init__(self, ChessSymbols.KING, player)
 
     def isMoveAllowed(self, fromTile, toTile):
-        if self.isBlack:
-            if (fromTile.getTile(0, 1) == toTile and toTile.piece == None) \
-            or ((fromTile.getTile(1, -1) == toTile or fromTile.getTile(1, 1) == toTile) and toTile.piece != None and not toTile.piece.isBlack):
-                return True
+        if (toTile in (fromTile.getTile(-1, -1), fromTile.getTile(-1, 0), fromTile.getTile(-1, 1),
+                       fromTile.getTile(0, -1), fromTile.getTile(0, 1),
+                       fromTile.getTile(1, -1), fromTile.getTile(1, 0), fromTile.getTile(1, 1))
+            and ((toTile.piece == None) or (toTile.piece.player != self.player))):
+            return True
         else:
-            if (fromTile.getTile(0, -1) == toTile and toTile.piece == None) \
-            or ((fromTile.getTile(-1, -1) == toTile or fromTile.getTile(-1, 1) == toTile) and toTile.piece != None and toTile.piece.isBlack):
-                return True
+            return False
+        
+class Rook(Piece):
+    def __init__(self, player):
+        Piece.__init__(self, ChessSymbols.ROOK, player)
+        
+    def isMoveAllowed(self, fromTile, toTile):
+        for x, y in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+            for i in range(1, 8):
+                if fromTile.getTile(i * x, i * y) == toTile and fromTile.piece.player != toTile.piece.player:
+                    return True
+                elif fromTile.getTile(i * x, i * y).piece != None:
+                    break
+
         return False
 
-class Laufer(Piece):
-    def __init__(self, isBlack):
-        Piece.__init__(self, ChessSymbols.BISHOP, isBlack)
+class Knight(Piece):
+    def __init__(self, player):
+        Piece.__init__(self, ChessSymbols.KNIGHT, player)
     
     def isMoveAllowed(self, fromTile, toTile):
-        for i in range(1, 8):
-            if fromTile.getTile(i, i) == toTile:
-                return True
-            elif fromTile.getTile(i, i).piece != None:
-                break
+        print "Warning: not implemented"
+        return True
 
-        for i in range(1, 8):
-            if fromTile.getTile(-i, i) == toTile:
-                return True
-            elif fromTile.getTile(-i, i).piece != None:
-                break
+class Pawn(Piece):
+    def __init__(self, player):
+        Piece.__init__(self, ChessSymbols.PAWN, player)
 
-        for i in range(1, 8):
-            if fromTile.getTile(i, -i) == toTile:
-                return True
-            elif fromTile.getTile(i, -i).piece != None:
-                break
-
-        for i in range(1, 8):
-            if fromTile.getTile(-i, -i) == toTile:
-                return True
-            elif fromTile.getTile(-i, -i).piece != None:
-                break
+    def isMoveAllowed(self, fromTile, toTile):
+        d = self.player.direction
+        
+        if toTile.piece == None and fromTile.getTile(0, d) == toTile:
+            # straight forward move
+            return True
+        
+        if (toTile.piece != None and toTile.piece.player != fromTile.piece.player
+            and toTile in (fromTile.getTile(-1, d), fromTile.getTile(1, d))):
+            # diagonal forward strike
+            return True
+        
         return False
+
+class Bishop(Piece):
+    def __init__(self, player):
+        Piece.__init__(self, ChessSymbols.BISHOP, player)
+    
+    def isMoveAllowed(self, fromTile, toTile):
+        for x, y in [(1, 1), (-1, 1), (1, -1), (-1, -1)]:
+            for i in range(1, 8):
+                if fromTile.getTile(i * x, i * y) == toTile and fromTile.piece.player != toTile.piece.player:
+                    return True
+                elif fromTile.getTile(i * x, i * y).piece != None:
+                    break
+
+        return False
+
+class Queen(Rook, Bishop):
+    def __init__(self, player):
+        Piece.__init__(self, ChessSymbols.QUEEN, player)
+        
+    def isMoveAllowed(self, fromTile, toTile):
+        return Rook.isMoveAllowed(self, fromTile, toTile) or Bishop.isMoveAllowed(self, fromTile, toTile)
 
 class Tile(object):
     def __init__(self, isBlack, board, col, row):
@@ -105,12 +133,12 @@ class Tile(object):
         
     def __str__(self):
         if self.isBlack:
-            return "\x1b[0m\x1b[47m %s \x1b[0m" % (self.piece if self.piece else " ")
+            return "\x1b[47m %s \x1b[0m" % (self.piece if self.piece else " ")
         else:
-            return "\x1b[0m %s \x1b[0m" % (self.piece if self.piece else " ")
+            return " %s \x1b[0m" % (self.piece if self.piece else " ")
         
     def movePieceTo(self, toTile):
-        self.piece.move(self, toTile)
+        return self.piece.move(self, toTile)
         
     def getTile(self, col, row):
         if (0 <= (self.row + row) < len(self.board)) and (0 <= (self.col + col) < len(self.board[0])):
@@ -118,73 +146,137 @@ class Tile(object):
         else:
             return None
 
-class Game(object):
+class Command(object):
+    def __init__(self, game):
+        self._game = game
+            
+    def execute(self, params):
+        raise NotImplementedError
 
+class CommandQuit(Command):
+    names = ["quit", "q"]
     
+    def execute(self, params):
+        self._game.stop()
+
+class CommandMove(Command):
+    names = ["move", "mv", "m"]
+    
+    def execute(self, params):
+        fromPosition = params[0]
+        toPosition = params[1]
+        fromTile = self._game.board[int(fromPosition[1]) - 1][ord(fromPosition[0].lower()) - ord("a")]
+        toTile = self._game.board[int(toPosition[1]) - 1][ord(toPosition[0].lower()) - ord("a")]
+        
+        if fromTile.piece == None:
+            print "Error: No piece found to move."
+            return False
+        
+        if fromTile.piece.player != self._game.currentPlayer():
+            print "Error: Only own pieces can be moved."
+            return False
+
+        return fromTile.movePieceTo(toTile)
+
+class CommandFactory:
+    def __init__(self, controller):
+        self._game = controller
+    
+    def getCommand(self, name):
+        for cls in Command.__subclasses__():
+            if name in cls.names:
+                return cls(self._game)
+        return None
+
+class StartPositionBuilder(object):
+    def __init__(self, game):
+        self._game = game
+        
+    def setDefaultPosition(self):
+        player1 = self._game.players[0]
+        player2 = self._game.players[1]
+        
+        for cell in self._game.board[1]:
+            cell.piece = Pawn(player1)
+    
+        for cell in self._game.board[-2]:
+            cell.piece = Pawn(player2)
+      
+        player = player1
+        for line in [0, -1]:
+            self._game.board[line][0].piece = Rook(player)
+            self._game.board[line][1].piece = Knight(player)
+            self._game.board[line][2].piece = Bishop(player)
+            self._game.board[line][3].piece = King(player)
+            self._game.board[line][4].piece = Queen(player)
+            self._game.board[line][5].piece = Bishop(player)
+            self._game.board[line][6].piece = Knight(player)
+            self._game.board[line][7].piece = Rook(player)
+            player = player2
+
+class Player(object):
+    def __init__(self, name, color, direction):
+        self._name = name
+        self._color = color
+        self.direction = direction
+
+    def setName(self, name):
+        self.name = name
+        
+    def __str__(self):
+        return self._color + self._name + "\x1b[0m"
+    
+    def getColor(self):
+        return self._color
+
+class Game(object):
     def __init__(self):
         self.board = []
         self._init_board()
-        self._set_start_positions()
+        self._currentPlayer = 0
+        self.players = [Player("Player 1", "\x1b[31m", 1), Player("Player 2", "\x1b[34m", -1)] # TODO: farbkodierung anders implementieren!
+        self._run = False
+        self._factory = CommandFactory(self)
+        StartPositionBuilder(self).setDefaultPosition()
 
     def _init_board(self):
-        self.board.extend(([Tile(((row + col) % 2 == 0), self.board, col, row) for col in range(8)] for row in range(8))) 
-    
-    def _set_start_positions(self):
-        for cell in self.board[1]:
-            cell.piece = Bauer(True)
-    
-        for cell in self.board[-2]:
-            cell.piece = Bauer(False)
-      
-        color = True
-        for line in [0, -1]:
-            self.board[line][0].piece = Piece(ChessSymbols.ROOK, color)
-            self.board[line][1].piece = Piece(ChessSymbols.KNIGHT, color)
-            self.board[line][2].piece = Laufer(color)
-            self.board[line][3].piece = Piece(ChessSymbols.KING, color)
-            self.board[line][4].piece = Piece(ChessSymbols.QUEEN, color)
-            self.board[line][5].piece = Laufer(color)
-            self.board[line][6].piece = Piece(ChessSymbols.KNIGHT, color)
-            self.board[line][7].piece = Piece(ChessSymbols.ROOK, color)
-            color = False
+        self.board.extend(([Tile(((row + col) % 2 == 0), self.board, col, row) for col in range(8)] for row in range(8)))
     
     def printBoard(self):
         rows = []
         
         rows.append("     A  B  C  D  E  F  G  H ")
-        rows.append("   ┌────────────────────────┐")  
+        rows.append("   ┌────────────────────────┐")
         for i, row in enumerate(self.board, start=1):
             rows.append(" " + str(i) + " │" + "".join(map(str, row)) + "│")
         rows.append("   └────────────────────────┘")
         print "\n".join(rows)
-          
         print ""
         
-    def move(self, fromPosition, toPosition):
-        fromTile = self.board[int(fromPosition[1]) - 1][self._col(fromPosition[0])]
-        toTile = self.board[int(toPosition[1]) - 1][self._col(toPosition[0])]
-        fromTile.movePieceTo(toTile)
-        
-    def _col(self, letter):
-        return ord(letter) - ord("A")
-        
+    def run(self):
+        self._run = True
+        self.printBoard()
+        while self._run:
+            splitText = raw_input("chess(%s)> " % self.currentPlayer()).split()
 
-def main():
-    game = Game()
-    game.printBoard()
+            cmd = self._factory.getCommand(splitText[0])
+            if (cmd):
+                if cmd.execute(splitText[1:]):
+                    self.switchPlayer()
+            else:
+                print "ERROR: Command not recognized."
+            self.printBoard()
 
-    print "\x1b[31mplayer A\x1b[0m from B2 to B3:"
-    game.move("B2", "B3")
-    game.printBoard()
-    
-    print "\x1b[34mplayer B\x1b[0m from G7 to G6:"
-    game.move("G7", "G6")
-    game.printBoard()
-    
-    print "\x1b[31mplayer A\x1b[0m from C1 to A3:"
-    game.move("C1", "A3")
-    game.printBoard()
+    def switchPlayer(self):
+        self._currentPlayer = (self._currentPlayer + 1) % 2
+
+    def currentPlayer(self):
+        return self.players[self._currentPlayer]
+
+    def stop(self):
+        self._run = False
 
 if __name__ == '__main__':
-    main()
+    game = Game()
+    game.run()
 
