@@ -1,0 +1,6 @@
+mkdir dist
+cd dist
+python /usr/lib/python2.7/Tools/freeze/freeze.py -X pydoc ../pyChess.py
+make
+cp pyChess ../
+cd ..
