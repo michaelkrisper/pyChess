@@ -1,6 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import readline
+
+# backward compatibility for python 2 and python 3
+try:
+    input = raw_input
+except NameError:
+    pass
+
+
+
 # TODO:
 # * win/loose/draw/patt logic
 # * additional rules
@@ -42,7 +52,7 @@ class Piece(object):
             fromTile.piece = None
             return True
         else:
-            print "Error: This move not allowed due to chess rules"
+            print("Error: This move not allowed due to chess rules")
             return False
 
 class Knight(Piece):
@@ -150,7 +160,7 @@ class CommandMove(Command):
     
     def execute(self, params):
         if len(params) != 2:
-            print "Error: Wrong Usage (expected: move FROM TO)"
+            print("Error: Wrong Usage (expected: move FROM TO)")
         
         fromPosition = params[0]
         toPosition = params[1]
@@ -159,10 +169,10 @@ class CommandMove(Command):
         toTile = self._game.board[int(toPosition[1]) - 1][ord(toPosition[0].lower()) - ord("a")]
         
         if fromTile.piece == None:
-            print "Error: No piece found to move."
+            print("Error: No piece found to move.")
         
         if fromTile.piece.player != self._game.current_player():
-            print "Error: Only own pieces can be moved."
+            print("Error: Only own pieces can be moved.")
 
         if fromTile.move_piece_to(toTile):
             self._game.switch_player()
@@ -172,7 +182,7 @@ class CommandSetName(Command):
     
     def execute(self, params):
         if len(params) != 1:
-            print "Error: Wrong Usage (expected: setname NAME)"
+            print("Error: Wrong Usage (expected: setname NAME)")
         
         self._game.current_player().set_name(params[0])
     
@@ -180,12 +190,11 @@ class CommandHelp(Command):
     names = ["help", "h"]
     
     def execute(self, params):
-        print "Following commands are available:"
-        print "  move, mv FROM TO   Moves a Piece (example: mv b2 b3)"
-        print "  setname, sn NAME   Set the current player name (example: setname Kasparov)"
-        print "  help, h            Display this help (example: h)"
-        print "  quit, q            Quits the Game (example: q)"
-        print ""
+        print("Following commands are available:"
+              "  move, mv FROM TO   Moves a Piece (example: mv b2 b3)"
+              "  setname, sn NAME   Set the current player name (example: setname Kasparov)"
+              "  help, h            Display this help (example: h)"
+              "  quit, q            Quits the Game (example: q)\n")
 
 class CommandFactory:
     def __init__(self, controller):
@@ -284,15 +293,14 @@ class Game(object):
         rows.append("   └────────────────────────┘")
         
         
-        print "\n".join(rows)
-        print ""
+        print("\n".join(rows) + "\n")
         
     def run(self):
         self._run = True
         #print '\x1b[H\x1b[2J' # delete whole console screen
         while self._run:
             self.print_board()
-            splitText = raw_input("chess (%s)> " % self.current_player()).split()
+            splitText = input("chess (%s)> " % self.current_player()).split()
             #print '\x1b[H\x1b[2J' # delete whole console screen
             if len(splitText) > 0:
                 cmd = self._factory.get_command(splitText[0])
@@ -300,9 +308,9 @@ class Game(object):
                     try:
                         cmd.execute(splitText[1:])
                     except Exception as err:
-                        print err.message
+                        print(err.message)
                 else:
-                    print "Error: Command not recognized."
+                    print("Error: Command not recognized.")
             
     def switch_player(self):
         self._currentPlayer = (self._currentPlayer + 1) % 2
