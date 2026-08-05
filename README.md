@@ -1,5 +1,8 @@
 # pyChess
 
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A python script which implements classic chess on the terminal.
 
 ![Screenshot of pyChess](Screenshot%202012-05-14.png)
@@ -49,3 +52,15 @@ The game is controlled through a simple command-line interface. The following co
 ## Author
 
 *   **Michael Krisper**
+
+## Project structure
+
+| Path | Purpose |
+|---|---|
+| `pyChess.py` | Complete game: board, pieces, rules, CLI loop |
+| `images/` | Piece artwork |
+| `freeze/` | cx_Freeze packaging configuration |
+
+## License
+
+MIT — see [LICENSE](LICENSE).
