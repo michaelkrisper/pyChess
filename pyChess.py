@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 
+import pickle
+
 try:
-    import readline
+    import readline  # noqa: F401  (enables line editing in input())
 except ImportError:
     pass
 
@@ -40,7 +42,7 @@ class Piece(object):
     def __str__(self):
         """Returns the string representation of the piece, with color."""
         return Color.colorize(self.name, self.player.get_color())
-    
+
     def is_move_allowed(self, fromTile, toTile, simulate=False):
         """
         Checks if a move is allowed for this piece.
@@ -57,7 +59,7 @@ class Piece(object):
             bool: True if the move is allowed, False otherwise.
         """
         raise NotImplementedError("Method not implemented: Piece.is_move_allowed")
-    
+
     def move(self, fromTile, toTile, game):
         """
         Executes a move from one tile to another.
@@ -102,11 +104,11 @@ class Knight(Piece):
     def __init__(self, player, use_symbols=True):
         """Initializes a Knight."""
         super().__init__("♞" if use_symbols else "N", player)
-    
+
     def is_move_allowed(self, fromTile, toTile, simulate=False):
         """Checks if the Knight's L-shaped move is valid."""
         if (toTile in (fromTile.get_tile(x, y) for x, y in ((-1, -2), (1, -2), (2, -1), (2, 1), (1, 2), (-1, 2), (-2, 1), (-2, -1)))
-            and (toTile.piece == None or toTile.piece.player != fromTile.piece.player)):
+            and (toTile.piece is None or toTile.piece.player != fromTile.piece.player)):
             return True
         return False
 
@@ -120,11 +122,12 @@ class Pawn(Piece):
     def is_move_allowed(self, fromTile, toTile, simulate=False):
         """Checks if the Pawn's move is valid, including initial double move, captures, and en passant."""
         d = self.player.direction
-        if toTile.piece == None and fromTile.get_tile(0, d) == toTile:
+        if toTile.piece is None and fromTile.get_tile(0, d) == toTile:
             return True
-        if self._firstmove and toTile.piece == None and fromTile.get_tile(0, 2 * d) == toTile:
+        if (self._firstmove and toTile.piece is None and fromTile.get_tile(0, 2 * d) == toTile
+                and fromTile.get_tile(0, d).piece is None):
             return True
-        if (toTile.piece != None and toTile.piece.player != fromTile.piece.player
+        if (toTile.piece is not None and toTile.piece.player != fromTile.piece.player
             and toTile in (fromTile.get_tile(-1, d), fromTile.get_tile(1, d))):
             return True
         if toTile == fromTile.game._en_passant_target_tile and toTile.piece is None \
@@ -146,16 +149,16 @@ class Rook(Piece):
         """Initializes a Rook."""
         super().__init__("♜" if use_symbols else "R", player)
         self._has_moved = False
-        
+
     def is_move_allowed(self, fromTile, toTile, simulate=False):
         """Checks if the Rook's straight-line move is valid."""
         for x, y in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
             for i in range(1, 8):
-                if fromTile.get_tile(i * x, i * y) == toTile and (toTile.piece == None or fromTile.piece.player != toTile.piece.player):
+                if fromTile.get_tile(i * x, i * y) == toTile and (toTile.piece is None or fromTile.piece.player != toTile.piece.player):
                     return True
                 else:
                     tile = fromTile.get_tile(i * x, i * y)
-                    if tile != None and tile.piece != None:
+                    if tile is not None and tile.piece is not None:
                         break
         return False
 
@@ -168,25 +171,25 @@ class Bishop(Piece):
     def __init__(self, player, use_symbols=True):
         """Initializes a Bishop."""
         super().__init__("♝" if use_symbols else "B", player)
-    
+
     def is_move_allowed(self, fromTile, toTile, simulate=False):
         """Checks if the Bishop's diagonal move is valid."""
         for x, y in [(1, 1), (-1, 1), (1, -1), (-1, -1)]:
             for i in range(1, 8):
-                if fromTile.get_tile(i * x, i * y) == toTile and (toTile.piece == None or fromTile.piece.player != toTile.piece.player):
+                if fromTile.get_tile(i * x, i * y) == toTile and (toTile.piece is None or fromTile.piece.player != toTile.piece.player):
                     return True
                 else:
                     tile = fromTile.get_tile(i * x, i * y)
-                    if tile != None and tile.piece != None:
+                    if tile is not None and tile.piece is not None:
                         break
         return False
 
-class Queen(Rook, Bishop):
+class Queen(Piece):
     """Represents a Queen piece."""
     def __init__(self, player, use_symbols=True):
         """Initializes a Queen."""
-        Piece.__init__(self, "♛" if use_symbols else "Q", player)
-        
+        super().__init__("♛" if use_symbols else "Q", player)
+
     def is_move_allowed(self, fromTile, toTile, simulate=False):
         """Checks if the Queen's move (Rook or Bishop move) is valid."""
         return Rook.is_move_allowed(self, fromTile, toTile, simulate) or Bishop.is_move_allowed(self, fromTile, toTile, simulate)
@@ -203,7 +206,7 @@ class King(Piece):
         is_basic_move = (toTile in (fromTile.get_tile(-1, -1), fromTile.get_tile(-1, 0), fromTile.get_tile(-1, 1),
                            fromTile.get_tile(0, -1), fromTile.get_tile(0, 1),
                            fromTile.get_tile(1, -1), fromTile.get_tile(1, 0), fromTile.get_tile(1, 1))
-                and ((toTile.piece == None) or (toTile.piece.player != self.player)))
+                and ((toTile.piece is None) or (toTile.piece.player != self.player)))
 
         # Castling
         is_castling = False
@@ -218,7 +221,7 @@ class King(Piece):
                 # Queenside
                 else:
                     rook_tile = fromTile.get_tile(-4, 0)
-                    path_clear = fromTile.get_tile(-1, 0).piece is None and fromTile.get_tile(-2, 0).piece is None and fromTile.get_tile(-3, 0).piece is None
+                    path_clear = all(fromTile.get_tile(-i, 0).piece is None for i in (1, 2, 3))
                     square_to_pass = fromTile.get_tile(-1, 0)
 
                 if path_clear and rook_tile and isinstance(rook_tile.piece, Rook) and not rook_tile.piece._has_moved:
@@ -235,8 +238,9 @@ class King(Piece):
         opponent_king_tile = game.get_king_tile(opponent)
 
         if opponent_king_tile:
-            if abs(toTile.col - opponent_king_tile.row) <= 1 and abs(toTile.row - opponent_king_tile.row) <= 1:
-                print("Error: Kings cannot be adjacent.")
+            if abs(toTile.col - opponent_king_tile.col) <= 1 and abs(toTile.row - opponent_king_tile.row) <= 1:
+                if not simulate:
+                    print("Error: Kings cannot be adjacent.")
                 return False
 
         return True
@@ -260,7 +264,7 @@ class Command(object):
     def __init__(self, game):
         """Initializes a command."""
         self._game = game
-            
+
     def execute(self, params):
         """
         Executes the command.
@@ -275,7 +279,7 @@ class Command(object):
 class CommandQuit(Command):
     """Command to quit the game."""
     names = ["quit", "q"]
-    
+
     def execute(self, params):
         """Stops the game loop."""
         self._game.stop()
@@ -283,7 +287,7 @@ class CommandQuit(Command):
 class CommandMove(Command):
     """Command to move a piece."""
     names = ["move", "mv"]
-    
+
     def execute(self, params):
         """
         Executes the move command.
@@ -294,19 +298,17 @@ class CommandMove(Command):
         if len(params) != 2:
             print("Error: Wrong Usage (expected: move FROM TO)")
             return
-        
-        fromPosition = params[0]
-        toPosition = params[1]
-        
-        fromTile = self._game.board[int(fromPosition[1]) - 1][ord(fromPosition[0].lower()) - ord("a")]
-        toTile = self._game.board[int(toPosition[1]) - 1][ord(toPosition[0].lower()) - ord("a")]
-        
-        self._game._en_passant_target_tile = None
 
-        if fromTile.piece == None:
+        fromTile = self._game.get_tile_by_name(params[0])
+        toTile = self._game.get_tile_by_name(params[1])
+        if fromTile is None or toTile is None:
+            print("Error: Squares must be given as a1 ... h8.")
+            return
+
+        if fromTile.piece is None:
             print("Error: No piece found to move.")
             return
-        
+
         if fromTile.piece.player != self._game.current_player():
             print("Error: Only own pieces can be moved.")
             return
@@ -315,6 +317,7 @@ class CommandMove(Command):
         is_capture = toTile.piece is not None
 
         if fromTile.move_piece_to(toTile, self._game):
+            self._game._en_passant_target_tile = None
             if is_pawn_move or is_capture:
                 self._game._halfmove_clock = 0
             else:
@@ -334,15 +337,15 @@ class CommandMove(Command):
 class CommandSetName(Command):
     """Command to set the current player's name."""
     names = ["setname", "sn"]
-    
+
     def execute(self, params):
         """Sets the name for the current player."""
         if len(params) != 1:
             print("Error: Wrong Usage (expected: setname NAME)")
-        
+            return
+
         self._game.current_player().set_name(params[0])
-    
-import pickle
+
 
 class CommandSave(Command):
     """Command to save the game to a file."""
@@ -378,6 +381,12 @@ class CommandLoad(Command):
             self._game.players = loaded_game.players
             self._game._currentPlayer = loaded_game._currentPlayer
             self._game._en_passant_target_tile = loaded_game._en_passant_target_tile
+            self._game._halfmove_clock = getattr(loaded_game, "_halfmove_clock", 0)
+            self._game._position_history = getattr(loaded_game, "_position_history", {})
+            self._game._last_position = None
+            for row in self._game.board:
+                for tile in row:
+                    tile.game = self._game
             print("Game loaded from %s" % filename)
         except Exception as e:
             print("Error loading game: %s" % e)
@@ -385,21 +394,21 @@ class CommandLoad(Command):
 class CommandHelp(Command):
     """Command to display help information."""
     names = ["help", "h"]
-    
+
     def execute(self, params):
         """Prints a list of available commands and their usage."""
-        print("Following commands are available:"
-              "  move, mv FROM TO   Moves a Piece (example: mv b2 b3)"
-              "  setname, sn NAME   Set the current player name (example: setname Kasparov)"
-              "  save FILENAME      Save the current game to a file (example: save mygame.sav)"
-              "  load FILENAME      Load a game from a file (example: load mygame.sav)"
-              "  help, h            Display this help (example: h)"
+        print("Following commands are available:\n"
+              "  move, mv FROM TO   Moves a Piece (example: mv b2 b3)\n"
+              "  setname, sn NAME   Set the current player name (example: setname Kasparov)\n"
+              "  save FILENAME      Save the current game to a file (example: save mygame.sav)\n"
+              "  load FILENAME      Load a game from a file (example: load mygame.sav)\n"
+              "  help, h            Display this help (example: h)\n"
               "  quit, q            Quits the Game (example: q)\n")
 
 class CommandFactory:
     def __init__(self, controller):
         self._game = controller
-    
+
     def get_command(self, name):
         for cls in Command.__subclasses__():
             if name in cls.names:
@@ -409,23 +418,23 @@ class CommandFactory:
 class StartPositionBuilder(object):
     def __init__(self, game):
         self._game = game
-        
+
     def set_default_position(self):
         player1 = self._game.players[0]
         player2 = self._game.players[1]
         for cell in self._game.board[1]:
             cell.piece = Pawn(player1)
-    
+
         for cell in self._game.board[-2]:
             cell.piece = Pawn(player2)
-      
+
         player = player1
         for line in [0, -1]:
             self._game.board[line][0].piece = Rook(player)
             self._game.board[line][1].piece = Knight(player)
             self._game.board[line][2].piece = Bishop(player)
-            self._game.board[line][3].piece = King(player)
-            self._game.board[line][4].piece = Queen(player)
+            self._game.board[line][3].piece = Queen(player)
+            self._game.board[line][4].piece = King(player)
             self._game.board[line][5].piece = Bishop(player)
             self._game.board[line][6].piece = Knight(player)
             self._game.board[line][7].piece = Rook(player)
@@ -439,17 +448,17 @@ class Tile(object):
         self.row = row
         self.piece = None
         self.game = game
-        
+
     def __str__(self):
         piece_str = " %s " % self.piece if self.piece else "   "
         if self.isBlack:
             return Color.BG_WHITE + piece_str + Color.END
         else:
             return piece_str
-        
+
     def move_piece_to(self, toTile, game):
         return self.piece.move(self, toTile, game)
-        
+
     def get_tile(self, col, row):
         if (0 <= (self.row + row) < len(self.board)) and (0 <= (self.col + col) < len(self.board[0])):
             return self.board[self.row + row][self.col + col]
@@ -464,10 +473,10 @@ class Player(object):
 
     def set_name(self, name):
         self._name = name
-        
+
     def __str__(self):
         return Color.colorize(self._name, self._color)
-    
+
     def get_color(self):
         return self._color
 
@@ -482,23 +491,24 @@ class Game(object):
         self._en_passant_target_tile = None
         self._halfmove_clock = 0
         self._position_history = {}
+        self._last_position = None
         StartPositionBuilder(self).set_default_position()
 
     def _init_board(self):
         self.board.extend(([Tile(((row + col) % 2 == 0), self.board, col, row, self) for col in range(8)] for row in range(8)))
-    
+
     def print_board(self):
         rows = []
-        
+
         rows.append("     A  B  C  D  E  F  G  H ")
         rows.append("   ┌────────────────────────┐")
-        for i, row in enumerate(self.board, start=1):
+        for i, row in reversed(list(enumerate(self.board, start=1))):
             rows.append(" " + str(i) + " │" + "".join(map(str, row)) + "│")
         rows.append("   └────────────────────────┘")
-        
-        
+
+
         print("\n".join(rows) + "\n")
-        
+
     def _get_position_hash(self):
         board_tuple = tuple(
             (tile.piece.name, tile.piece.player) if tile.piece else None
@@ -523,7 +533,10 @@ class Game(object):
         while self._run:
             self.print_board()
             current_hash = self._get_position_hash()
-            self._position_history[current_hash] = self._position_history.get(current_hash, 0) + 1
+            # Only count a position once per move, not once per (possibly invalid) command.
+            if current_hash != self._last_position:
+                self._last_position = current_hash
+                self._position_history[current_hash] = self._position_history.get(current_hash, 0) + 1
             if self._position_history[current_hash] >= 3:
                 print("Draw by threefold repetition.")
                 self.stop()
@@ -543,7 +556,12 @@ class Game(object):
                     print("Stalemate! The game is a draw.")
                 self.stop()
                 continue
-            splitText = input("chess (%s)> " % self.current_player()).split()
+            try:
+                splitText = input("chess (%s)> " % self.current_player()).split()
+            except EOFError:
+                print()
+                self.stop()
+                continue
             if len(splitText) > 0:
                 cmd = self._factory.get_command(splitText[0])
                 if (cmd):
@@ -553,7 +571,13 @@ class Game(object):
                         print(str(err))
                 else:
                     print("Error: Command not recognized.")
-            
+
+    def get_tile_by_name(self, name):
+        """Returns the tile for a square name like 'e4', or None if the name is invalid."""
+        if len(name) != 2 or name[0].lower() not in "abcdefgh" or name[1] not in "12345678":
+            return None
+        return self.board[int(name[1]) - 1][ord(name[0].lower()) - ord("a")]
+
     def switch_player(self):
         self._currentPlayer = (self._currentPlayer + 1) % 2
 
@@ -618,7 +642,15 @@ class Game(object):
         for row in self.board:
             for tile in row:
                 if tile.piece and tile.piece.player == by_player:
-                    if tile.piece.is_move_allowed(tile, square, simulate=True):
+                    if isinstance(tile.piece, Pawn):
+                        # Pawns only attack diagonally, whether or not the square is occupied.
+                        d = by_player.direction
+                        if square in (tile.get_tile(-1, d), tile.get_tile(1, d)):
+                            return True
+                    elif isinstance(tile.piece, King):
+                        if square is not tile and abs(square.col - tile.col) <= 1 and abs(square.row - tile.row) <= 1:
+                            return True
+                    elif tile.piece.is_move_allowed(tile, square, simulate=True):
                         return True
         return False
 
