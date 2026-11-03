@@ -26,3 +26,14 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+# IDE
+.project
+.pydevproject
+.idea/
+.vscode/
+
+# Tools
+.pytest_cache/
+.ruff_cache/
+.venv/
