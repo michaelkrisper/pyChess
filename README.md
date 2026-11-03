@@ -1,66 +1,72 @@
 # pyChess
 
+Two-player chess for the terminal, written in plain Python with no dependencies.
+
+[![CI](https://github.com/michaelkrisper/pyChess/actions/workflows/ci.yml/badge.svg)](https://github.com/michaelkrisper/pyChess/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-A python script which implements classic chess on the terminal.
+```
+     A  B  C  D  E  F  G  H
+   ┌────────────────────────┐
+ 8 │ ♜  ♞  ♝  ♛  ♚  ♝  ♞  ♜ │
+ 7 │ ♟  ♟  ♟  ♟  ♟  ♟  ♟  ♟ │
+ 6 │                        │
+ 5 │                        │
+ 4 │             ♟          │
+ 3 │                        │
+ 2 │ ♟  ♟  ♟  ♟     ♟  ♟  ♟ │
+ 1 │ ♜  ♞  ♝  ♛  ♚  ♝  ♞  ♜ │
+   └────────────────────────┘
 
-![Screenshot of pyChess](Screenshot%202012-05-14.png)
+chess (Player 2)>
+```
 
-## Description
-
-pyChess is a command-line based chess game written in Python. It allows two players to play a game of chess in the terminal, using text-based commands to move pieces. The board is rendered with unicode characters for a classic feel.
+In the terminal the board is drawn with a checkered background; Player 1 (red)
+plays from rank 1 and moves first, Player 2 (blue) plays from rank 8.
 
 ## Features
 
-The game implements the following standard chess rules and features:
+- Full piece movement rules, including castling, en passant and pawn promotion
+- Check, checkmate and stalemate detection
+- Draws by threefold repetition, the 50-move rule and insufficient material
+- Save and load games
+- Single file (`pyChess.py`), standard library only
 
-*   Standard piece movement
-*   Castling
-*   En passant
-*   Pawn promotion
-*   Check and checkmate detection
-*   Stalemate detection
-*   Draw by threefold repetition
-*   Draw by the 50-move rule
-*   Draw by insufficient mating material
-*   Save and load games
+## Usage
 
-## Requirements
-
-*   Python 3.x
-
-## How to Run
-
-To run the game, simply execute the following command in your terminal:
+Requires Python 3.9 or newer and a terminal with Unicode and ANSI color support.
 
 ```bash
+git clone https://github.com/michaelkrisper/pyChess.git
+cd pyChess
 python3 pyChess.py
 ```
 
-## How to Play
+### Commands
 
-The game is controlled through a simple command-line interface. The following commands are available:
-
-*   `move <FROM> <TO>` (or `mv <FROM> <TO>`): Moves a piece from one square to another. For example: `mv e2 e4`.
-*   `setname <NAME>` (or `sn <NAME>`): Sets the name for the current player.
-*   `save <FILENAME>`: Saves the current game state to a file.
-*   `load <FILENAME>`: Loads a game state from a file.
-*   `help` (or `h`): Displays a list of available commands.
-*   `quit` (or `q`): Quits the game.
-
-## Author
-
-*   **Michael Krisper**
-
-## Project structure
-
-| Path | Purpose |
+| Command | Description |
 |---|---|
-| `pyChess.py` | Complete game: board, pieces, rules, CLI loop |
-| `images/` | Piece artwork |
-| `freeze/` | cx_Freeze packaging configuration |
+| `move FROM TO`, `mv FROM TO` | Move a piece, e.g. `mv e2 e4`; castle by moving the king two squares (`mv e1 g1`) |
+| `setname NAME`, `sn NAME` | Set the name of the current player |
+| `save FILE` | Save the game |
+| `load FILE` | Load a saved game |
+| `help`, `h` | Show the command list |
+| `quit`, `q` | Quit (Ctrl-D works too) |
+
+When a pawn reaches the last rank you are asked for the promotion piece
+(`Q`, `R`, `B` or `N`).
+
+Save files use Python's `pickle` format; only load files you created yourself.
+
+## Development
+
+```bash
+pip install pytest ruff
+pytest
+ruff check .
+```
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT - see [LICENSE](LICENSE).
