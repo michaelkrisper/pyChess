@@ -344,6 +344,8 @@ def cmd_release(part: str) -> int:
         stdin=notes,
     )
     output(version=new)
+    # Optional (DISPATCH): redeploy so that an app showing its version shows it.
+    dispatch(default)
     summary(
         f"Released {new} ({sha[:7]}), previous release {previous or 'none'}.\n\n{notes}"
     )
@@ -577,10 +579,15 @@ def cmd_automerge() -> int:
     merged = [n for n in numbers if merge_if_green(n, sha, default)]
     if merged:
         # Merges made with the GITHUB_TOKEN start no push workflows, so start them here.
-        for workflow in os.environ.get("DISPATCH", "").split():
-            run("gh", "workflow", "run", workflow, "--repo", repo(), "--ref", default)
-            print(f"Started {workflow} on {default}.")
+        dispatch(default)
     return 0
+
+
+def dispatch(branch: str) -> None:
+    """Start the workflows listed in DISPATCH (space-separated files) on `branch`."""
+    for workflow in os.environ.get("DISPATCH", "").split():
+        run("gh", "workflow", "run", workflow, "--repo", repo(), "--ref", branch)
+        print(f"Started {workflow} on {branch}.")
 
 
 def main(argv: list[str]) -> int:
