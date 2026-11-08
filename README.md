@@ -3,6 +3,7 @@
 Two-player chess for the terminal, written in plain Python with no dependencies.
 
 [![CI](https://github.com/michaelkrisper/pyChess/actions/workflows/ci.yml/badge.svg)](https://github.com/michaelkrisper/pyChess/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/github/v/tag/michaelkrisper/pyChess?sort=semver&label=version)](https://github.com/michaelkrisper/pyChess/releases)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -66,6 +67,15 @@ pip install pytest ruff
 pytest
 ruff check .
 ```
+
+CI runs both on every pull request. Every merge to `main` is tagged with the
+next patch version; bundled releases with release notes come from the Release
+workflow.
+
+## Contributing
+
+Changes start with an issue and go through a pull request; see
+[CONTRIBUTING](CONTRIBUTING.md).
 
 ## License
 
